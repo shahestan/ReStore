@@ -1,6 +1,10 @@
 using API.Data;
 using Microsoft.EntityFrameworkCore;
 
+// For Enabling CORS-Policy
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -10,20 +14,32 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//Add Sqlite services
+// Add Sqlite services
 builder.Services.AddDbContext<StoreContext>(opt =>
 {
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+// Add CORS service
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      builder =>
+                      {
+                          builder.AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .WithOrigins("http://localhost:3000");
+                      });
+});
+
 var app = builder.Build();
 
-//####################################################################################################
-//Add Data seeding to services
-//Create Scope and retrive context from required services and finally released memory by "using" word
+// ####################################################################################################
+// Add Data seeding to services
+// Create Scope and retrive context from required services and finally released memory by "using" word
 using var scope = app.Services.CreateScope();
 var context = scope.ServiceProvider.GetRequiredService<StoreContext>();
-//For error logging
+// For error logging
 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
 try
@@ -45,6 +61,10 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
+
+app.UseRouting();
+
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthorization();
 
